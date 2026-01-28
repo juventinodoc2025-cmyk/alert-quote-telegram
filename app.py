@@ -1,27 +1,34 @@
 import os
-from telegram import Bot
+import requests
 from flask import Flask
 
 app = Flask(__name__)
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-def send_test_message():
-    bot = Bot(token=TELEGRAM_TOKEN)
-    bot.send_message(
-        chat_id=TELEGRAM_CHAT_ID,
-        text="✅ TEST OK: messaggio inviato da Render"
-    )
+TARGET_ODDS = 1.03
+
+def send_telegram_message(text):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": text
+    }
+    requests.post(url, json=payload)
 
 @app.route("/")
 def home():
-    return "Service alive"
+    return "OK", 200
 
-@app.route("/run")
-def run():
-    send_test_message()
-    return "Telegram test sent"
+@app.route("/check")
+def check_odds():
+    current_odds = 1.05  # simulazione
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    if current_odds >= TARGET_ODDS:
+        send_telegram_message(
+            f"🚨 Over 0.5 arrivato a quota {current_odds}"
+        )
+        return "Alert sent", 200
+
+    return "No alert", 200
