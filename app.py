@@ -1,31 +1,30 @@
-import time
+from flask import Flask
+import os
 import requests
-from telegram import Bot
 
-# === CONFIGURAZIONE (poi la completiamo) ===
-TELEGRAM_TOKEN = "INSERISCI_TOKEN_BOT"
-TELEGRAM_CHAT_ID = "INSERISCI_CHAT_ID"
+app = Flask(__name__)
 
-# Simulazione quota (per ora)
-TARGET_ODDS = 1.03
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-def send_telegram_message(text):
-    bot = Bot(token=TELEGRAM_TOKEN)
-    bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=text)
+def send_telegram(message):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        return "Telegram not configured"
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message
+    }
+    requests.post(url, json=payload)
 
-def main():
-    notified = False
+@app.route("/")
+def home():
+    return "Service alive"
 
-    while True:
-        current_odds = 1.01  # per ora fissa, poi la colleghiamo alle API
-
-        if current_odds >= TARGET_ODDS and not notified:
-            send_telegram_message(
-                f"🚨 Over 0.5 arrivato a quota {current_odds}"
-            )
-            notified = True
-
-        time.sleep(60)  # controlla ogni 60 secondi
+@app.route("/run")
+def run_check():
+    send_telegram("✅ Cron attivo: servizio funzionante")
+    return "OK"
 
 if __name__ == "__main__":
-    main()
+    app.run()
